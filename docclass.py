@@ -17,7 +17,6 @@ class classifier:
         self.fc = {}
         self.cc = {}
         self.getfeatures = getfeatures
-
     def incf(self,f,cat):
         self.fc.setdefault(f,{})
         self.fc[f].setdefault(cat,0)
@@ -58,3 +57,34 @@ class classifier:
         totals=sum([self.fcount(f,c) for c in self.categories()])
         bp = ((weight*ap)+(totals*basicprob))/(weight+totals)
         return bp
+class naivebayes(classifier):
+    def __init__(self, getfeatures):
+        classifier.__init__(self, getfeatures)
+        self.thresholds={}
+    def setthreshold(self,cat,t):
+        self.thresholds[cat]=t
+    def getthreshold(self,cat):
+        if cat not in self.thresholds: return 1
+        return self.thresholds[cat]
+    def classify(self,item,default=None):
+        probs={}
+        max=0.0
+        for cat in self.categories():
+            probs[cat]=self.prob(item,cat)
+            if probs[cat]>max:
+                max=probs[cat]
+                best=cat
+        for cat in probs:
+            if cat==best:continue
+            if probs[cat]*self.getthreshold(best)>probs[best]:return default
+        return best
+    def docprob(self,item,cat):
+        features = self.getfeatures(item)
+        p=1
+        for f in features: p*=self.weightedprob(f, cat,self.fprob)
+        return p
+    def prob(self,item,cat):
+        catprob=self.catcount(cat)/self.totalcount()
+        docprob=self.docprob(item,cat)
+        return docprob*catprob
+
